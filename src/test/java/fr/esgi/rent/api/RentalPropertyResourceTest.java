@@ -1,8 +1,8 @@
 package fr.esgi.rent.api;
 
-import fr.esgi.rent.domain.RentalPropertyEntity;
-import fr.esgi.rent.mapper.RentalPropertyDtoMapper;
-import fr.esgi.rent.repository.RentalPropertyRepository;
+import fr.esgi.rent.dto.RentalPropertyDto;
+import fr.esgi.rent.service.RentalPropertyService;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -17,32 +17,46 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(RentalPropertyResource.class)
-@Import(RentalPropertyDtoMapper.class)
+@Import(RestExceptionHandler.class)
 class RentalPropertyResourceTest {
 
     @Autowired MockMvc mvc;
 
     @MockitoBean
-    RentalPropertyRepository repository;
+    RentalPropertyService service;   // on mocke la façade
+
+    static UUID PROPERTY_ID = UUID.fromString("00000000-0000-0000-0000-000000000042");
 
     @Test
-    void shouldReturnAllProperties() throws Exception {
-        RentalPropertyEntity entity = new RentalPropertyEntity();
-        entity.setId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
-        entity.setDescription("Studio cosy");
-        entity.setTown("Vincennes");
-        entity.setAddress("3 rue Victor-Hugo");
-        entity.setRentAmount(790.0);
-        entity.setArea(22.5);
-        entity.setNumberOfBedrooms((byte) 0);
+    void shouldReturnList() throws Exception {
+        RentalPropertyDto dto = new RentalPropertyDto(
+                PROPERTY_ID, "Studio", "Paris", "1 rue du Test", 800, 20, (byte)0);
 
-        when(repository.findAll()).thenReturn(List.of(entity));
+        when(service.findAll()).thenReturn(List.of(dto));
 
         mvc.perform(get("/api/rental-properties"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].id").value("00000000-0000-0000-0000-000000000001"))
-                .andExpect(jsonPath("$[0].description").value("Studio cosy"))
-                .andExpect(jsonPath("$[0].town").value("Vincennes"));
+                .andExpect(jsonPath("$[0].id").value(PROPERTY_ID.toString()));
+    }
+
+    @Test
+    void shouldReturnDetail() throws Exception {
+        RentalPropertyDto dto = new RentalPropertyDto(
+                PROPERTY_ID, "Studio", "Paris", "1 rue du Test", 800, 20, (byte)0);
+
+        when(service.findById(PROPERTY_ID)).thenReturn(dto);
+
+        mvc.perform(get("/api/rental-properties/{id}", PROPERTY_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.town").value("Paris"));
+    }
+
+    @Test
+    void shouldReturn404WhenNotFound() throws Exception {
+        when(service.findById(PROPERTY_ID))
+                .thenThrow(new EntityNotFoundException());
+
+        mvc.perform(get("/api/rental-properties/{id}", PROPERTY_ID))
+                .andExpect(status().isNotFound());
     }
 }
