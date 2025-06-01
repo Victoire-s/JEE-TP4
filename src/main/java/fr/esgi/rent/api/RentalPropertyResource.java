@@ -1,13 +1,15 @@
 package fr.esgi.rent.api;
 
-import fr.esgi.rent.dto.RentalPropertyDto;
+import fr.esgi.rent.dto.request.RentalPropertyRequest;
+import fr.esgi.rent.dto.response.RentalPropertyDto;
 import fr.esgi.rent.service.RentalPropertyService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,5 +32,19 @@ public class RentalPropertyResource {
     @GetMapping("/rental-properties/{id}")
     public RentalPropertyDto getOne(@PathVariable UUID id) {
         return service.findById(id);
+    }
+    @PostMapping("/rental-properties")
+    public ResponseEntity<RentalPropertyDto> create(
+            @Valid @RequestBody RentalPropertyRequest body,
+            UriComponentsBuilder uriBuilder) {
+
+        RentalPropertyDto dto = service.create(body);
+
+        URI location = uriBuilder
+                .path("/api/rental-properties/{id}")
+                .buildAndExpand(dto.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(dto);
     }
 }

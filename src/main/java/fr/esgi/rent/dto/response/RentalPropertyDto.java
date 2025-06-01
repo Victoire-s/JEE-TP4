@@ -1,4 +1,4 @@
-package fr.esgi.rent.dto;
+package fr.esgi.rent.dto.response;
 
 import java.util.UUID;
 

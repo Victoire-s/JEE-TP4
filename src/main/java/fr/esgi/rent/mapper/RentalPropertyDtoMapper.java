@@ -1,7 +1,7 @@
 package fr.esgi.rent.mapper;
 
 import fr.esgi.rent.domain.RentalPropertyEntity;
-import fr.esgi.rent.dto.RentalPropertyDto;
+import fr.esgi.rent.dto.response.RentalPropertyDto;
 import org.springframework.stereotype.Component;
 
 @Component
