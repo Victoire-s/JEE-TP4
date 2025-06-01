@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.endsWith;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,11 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(RestExceptionHandler.class)
 class RentalPropertyResourceTest {
 
-    @Autowired
-    MockMvc mvc;
+    @Autowired MockMvc mvc;
 
-    @MockitoBean
-    RentalPropertyService service;
+    @MockitoBean RentalPropertyService service;
 
     private static final UUID PROPERTY_ID =
             UUID.fromString("00000000-0000-0000-0000-000000000042");
@@ -40,12 +38,15 @@ class RentalPropertyResourceTest {
                 PROPERTY_ID, "Studio", "Paris", "1 rue du Test",
                 800, 20, (byte) 0);
 
-        when(service.findAll()).thenReturn(List.of(dto));
+        // near_velib_stations = false, aucun filtre town
+        when(service.findAll(eq(false), isNull()))
+                .thenReturn(List.of(dto));
 
         mvc.perform(get("/api/rental-properties"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(PROPERTY_ID.toString()));
     }
+
     @Test
     void shouldReturnDetail() throws Exception {
         RentalPropertyDto dto = new RentalPropertyDto(

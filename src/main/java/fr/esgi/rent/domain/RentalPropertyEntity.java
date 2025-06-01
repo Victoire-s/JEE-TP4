@@ -16,7 +16,7 @@ public class RentalPropertyEntity {
     private String town;
     @Column(name = "address")
     private String address;
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "property_type_id")
     private PropertyTypeEntity propertyType;
     @Column(name = "rent_amount")

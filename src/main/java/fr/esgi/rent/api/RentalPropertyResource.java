@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
-
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -17,22 +16,27 @@ import java.util.UUID;
 @RequestMapping("/api")
 public class RentalPropertyResource {
 
-
     private final RentalPropertyService service;
 
     public RentalPropertyResource(RentalPropertyService service) {
-
         this.service = service;
     }
 
     @GetMapping("/rental-properties")
-    public List<RentalPropertyDto> getRentalProperties() {
-        return service.findAll();
+    public List<RentalPropertyDto> getRentalProperties(
+            @RequestParam(name = "near_velib_stations", defaultValue = "false")
+            boolean nearVelibStations,
+            @RequestParam(name = "town", required = false)
+            List<String> towns) {
+
+        return service.findAll(nearVelibStations, towns);
     }
+
     @GetMapping("/rental-properties/{id}")
     public RentalPropertyDto getOne(@PathVariable UUID id) {
         return service.findById(id);
     }
+
     @PostMapping("/rental-properties")
     public ResponseEntity<RentalPropertyDto> create(
             @Valid @RequestBody RentalPropertyRequest body,

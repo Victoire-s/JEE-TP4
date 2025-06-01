@@ -3,6 +3,7 @@ package fr.esgi.rent.service;
 import fr.esgi.rent.domain.*;
 import fr.esgi.rent.dto.request.RentalPropertyRequest;
 import fr.esgi.rent.dto.response.RentalPropertyDto;
+import fr.esgi.rent.external.velib.VelibStationClient;
 import fr.esgi.rent.mapper.*;
 import fr.esgi.rent.repository.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,25 +19,26 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@EntityScan("fr.esgi.rent.domain")
 @DataJpaTest(properties = {
         "spring.jpa.hibernate.ddl-auto=create",
         "spring.liquibase.enabled=false",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@EntityScan("fr.esgi.rent.domain")
 @Import({
         RentalPropertyService.class,
         RentalPropertyDtoMapper.class,
-        RentalPropertyRequestMapper.class      // ← injecté dans le service
+        RentalPropertyRequestMapper.class
 })
 class RentalPropertyServiceTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    VelibStationClient velibClient;
 
     @Autowired RentalPropertyService          service;
     @Autowired RentalPropertyRepository       repository;
     @Autowired PropertyTypeRepository         typeRepo;
     @Autowired EnergyClassificationRepository energyRepo;
-
-    /* ---------- READ ---------- */
 
     @Test
     void shouldFindById() {
@@ -53,11 +55,11 @@ class RentalPropertyServiceTest {
 
     @Test
     void shouldReturnAll() {
-        var e1 = new RentalPropertyEntity(); e1.setDescription("Studio");  e1.setTown("Paris");
-        var e2 = new RentalPropertyEntity(); e2.setDescription("T2");      e2.setTown("Lyon");
+        var e1 = new RentalPropertyEntity(); e1.setDescription("Studio"); e1.setTown("Paris");
+        var e2 = new RentalPropertyEntity(); e2.setDescription("T2");     e2.setTown("Lyon");
         repository.saveAllAndFlush(List.of(e1, e2));
 
-        List<RentalPropertyDto> list = service.findAll();
+        List<RentalPropertyDto> list = service.findAll(false, null);
 
         assertThat(list)
                 .hasSize(2)
@@ -71,21 +73,16 @@ class RentalPropertyServiceTest {
                 () -> service.findById(UUID.randomUUID()));
     }
 
-    /* ---------- CREATE ---------- */
-
     @Test
     void shouldPersistAndReturnDto() {
-        // -- FK PropertyType
         var type = new PropertyTypeEntity();
         type.setDesignation("Studio");
         typeRepo.saveAndFlush(type);
 
-        // -- FK EnergyClassification
         var energy = new EnergyClassificationEntity();
         energy.setDesignation("A");
         energyRepo.saveAndFlush(energy);
 
-        // -- Request (respecter l’ordre des paramètres du record)
         var req = new RentalPropertyRequest(
                 "Studio",                     // description
                 "Paris",                      // town
